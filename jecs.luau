@@ -1058,37 +1058,40 @@ do
 		local idr = component_index[delete]
 
 		if idr then
-			local children = {}
-			for archetype_id in idr.cache do
-				local idr_archetype = archetypes[archetype_id]
-
-				for i, child in idr_archetype.entities do
-					table.insert(children, child)
-				end
-			end
 			local flags = idr.flags
 			if bit32.band(flags, ECS_ID_DELETE) ~= 0 then
-				for _, child in children do
-					-- Cascade deletion to children
-					world_delete(world, child)
+				for archetype_id in idr.cache do
+					local idr_archetype = archetypes[archetype_id]
+
+					local ents = idr_archetype.entities
+					local n = #ents
+					for i = n, 1, -1 do
+						local child = ents[i]
+						world_delete(world, child)
+					end
 				end
 			else
-				for _, child in children do
-					world_remove(world, child, delete)
+				for archetype_id in idr.cache do
+					local idr_archetype = archetypes[archetype_id]
+
+					local ents = idr_archetype.entities
+					local n = #ents
+					for i = n, 1, -1 do
+						local child = ents[i]
+						world_remove(world, child, delete)
+					end
 				end
 			end
 		end
 
 		if idr_t then
 			for archetype_id in idr_t.cache do
-				local children = {}
 				local idr_t_archetype = archetypes[archetype_id]
 
 				local idr_t_types = idr_t_archetype.types
 
-				for _, child in idr_t_archetype.entities do
-					table.insert(children, child)
-				end
+				local ents = idr_t_archetype.entities
+				local n = #ents
 
 				for _, id in idr_t_types do
 					if not ECS_IS_PAIR(id) then
@@ -1100,13 +1103,14 @@ do
 						local flags = id_record.flags
 						local flags_delete_mask: number = bit32.band(flags, ECS_ID_DELETE)
 						if flags_delete_mask ~= 0 then
-							for _, child in children do
-								-- Cascade deletions of it has Delete as component trait
+							for i = n, 1, -1 do
+								local child = ents[i]
 								world_delete(world, child, destruct)
 							end
 							break
 						else
-							for _, child in children do
+							for i = n, 1, -1 do
+								local child = ents[i]
 								world_remove(world, child, id)
 							end
 						end
